@@ -1,0 +1,6 @@
+# Responsible for everything.
+* @jprzunino
+
+# Responsible for GitHub folder and CODEOWNERS file.
+.github/CODEOWNERS @jprzunino
+.github/* @jprzunino

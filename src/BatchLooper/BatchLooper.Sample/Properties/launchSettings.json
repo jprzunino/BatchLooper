@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "BatchLooper.Sample": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
