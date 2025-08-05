@@ -3,7 +3,8 @@ using BatchLooper.Core.Interfaces.Batcher;
 using BatchLooper.Core.Interfaces.Patterns;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using static BatchLooper.Core.Helpers.InterateParallelHelper;
+using static BatchLooper.Core.Helpers.IterateHelper;
+using static BatchLooper.Core.Helpers.IterateParallelHelper;
 
 namespace BatchLooper.Core.Models.Batcher
 {
@@ -55,16 +56,13 @@ namespace BatchLooper.Core.Models.Batcher
                      action: item => _dictItemsInfo[item.Index] = item);
 
         }
+
         public BatchManagerModel([NotNull] ISemaphorePattern semaphore, [NotNull] BatchInfoModel<TEntity> batchInfo, [NotNull] IBatcherConfiguration<TEntity> configuration)
             : this(semaphore ?? throw new ArgumentNullException(nameof(semaphore)))
         {
             ArgumentNullException.ThrowIfNull(batchInfo);
-
-
             BatchInfo = batchInfo ?? throw new ArgumentNullException(nameof(batchInfo));
-            BatchInfo.Collection
-                 .ProcessInParallelWhenAllAsync(batchesInParallel: configuration.BatchCount, degreeOfParallelism: configuration is not { MaxDegreeOfParallelism: -1 } ? (int)Math.Ceiling(configuration.MaxDegreeOfParallelism * 0.25M) : null, partitionerOptions: EnumerablePartitionerOptions.NoBuffering, cancellationToken: configuration.CancellationToken,
-                 body: async item => { _dictItemsInfo[item.Index] = item; await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.None); });
+            BatchInfo.Collection.Span.IterateSpanAndUnsafe(item => _dictItemsInfo[item.Index] = item, () => configuration.CancellationToken.IsCancellationRequested);
         }
 
         public BatchManagerModel([NotNull] ISemaphorePattern semaphore, [NotNull] IEnumerable<TEntity> batchItems, int index, int batchesCount, int? linePosition = null, ParallelOptions? parallelOptions = null)

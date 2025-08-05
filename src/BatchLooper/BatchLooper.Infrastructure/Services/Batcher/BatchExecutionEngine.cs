@@ -15,8 +15,8 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks.Dataflow;
 using static BatchLooper.Core.Helpers.EnumHelper;
 using static BatchLooper.Core.Helpers.ExceptionHelper;
-using static BatchLooper.Core.Helpers.InterateHelper;
-using static BatchLooper.Core.Helpers.InterateParallelHelper;
+using static BatchLooper.Core.Helpers.IterateHelper;
+using static BatchLooper.Core.Helpers.IterateParallelHelper;
 using static BatchLooper.Core.Helpers.MemoryLeakHelper;
 using static BatchLooper.Core.Helpers.SyncTaskHelper;
 
@@ -43,10 +43,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher
         private bool _finalBatchTriggered = false;
         private readonly ConcurrentQueue<Exception> _errors;
         private int _currentBatch = 0;
-
-        private readonly ConcurrentDictionary<int, int> _printLineCache = new();
-        private int _columnSelector = 0;
-        private int _lineIndex = 0;
+                
         private int _status;
         private readonly JsonSerializerOptions _serializerOptions;
         private static readonly IEnumerable<TEntity> _emptyItems = [];
@@ -659,7 +656,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher
             Interlocked.Exchange(ref _status, (int)BatcherBuilderStatus.Running);
 
             _config.Source
-                .InterateSpanAndUnsafe(item =>
+                .IterateSpanAndUnsafe(item =>
                 {
                     var pushed = _batcher.Post(item);
 
@@ -685,7 +682,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher
             Interlocked.Exchange(ref _status, (int)BatcherBuilderStatus.Running);
 
             _config.Source
-                .InterateSpanAndUnsafe(item =>
+                .IterateSpanAndUnsafe(item =>
                 {
                     var pushed = _buffer.Post(item);
 
@@ -788,7 +785,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher
             await _stats.CollectDurationAsync(async timestamp =>
             {
                 await batchManager.BatchInfo!.Collection.Span
-                .InterateSpanAndUnsafeAsync(async itemManager =>
+                .IterateSpanAndUnsafeAsync(async itemManager =>
                 {
                     try
                     {
@@ -839,7 +836,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher
             await _stats.CollectDurationAsync(async timestamp =>
             {
                 await batchManager.BatchInfo!.Collection.Span
-                 .InterateSpanAndUnsafeAsync(async itemManager =>
+                 .IterateSpanAndUnsafeAsync(async itemManager =>
                  {
                      try
                      {
@@ -1131,7 +1128,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher
             _stats.CollectDuration((timestamp) =>
             {
                 batchManager.BatchInfo!.Collection.Span
-                .InterateSpanAndUnsafe(itemManager =>
+                .IterateSpanAndUnsafe(itemManager =>
                 {
                     try
                     {
@@ -1177,7 +1174,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher
             _stats.CollectDuration((timestamp) =>
             {
                 batchManager.BatchInfo!.Collection.Span
-                .InterateSpanAndUnsafe(itemManager =>
+                .IterateSpanAndUnsafe(itemManager =>
                 {
                     try
                     {

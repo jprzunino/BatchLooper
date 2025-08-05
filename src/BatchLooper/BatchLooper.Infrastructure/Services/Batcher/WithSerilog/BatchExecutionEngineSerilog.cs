@@ -14,7 +14,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks.Dataflow;
 using static BatchLooper.Core.Helpers.ExceptionHelper;
-using static BatchLooper.Core.Helpers.InterateHelper;
+using static BatchLooper.Core.Helpers.IterateHelper;
 using static BatchLooper.Core.Helpers.MemoryLeakHelper;
 using static BatchLooper.Core.Helpers.SyncTaskHelper;
 
@@ -656,7 +656,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher.WithSerilog
             Interlocked.Exchange(ref _status, (int)BatcherBuilderStatus.Running);
 
             _config.Source
-                .InterateSpanAndUnsafe(item =>
+                .IterateSpanAndUnsafe(item =>
                 {
                     var pushed = _batcher.Post(item);
 
@@ -682,7 +682,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher.WithSerilog
             Interlocked.Exchange(ref _status, (int)BatcherBuilderStatus.Running);
 
             _config.Source
-                .InterateSpanAndUnsafe(item =>
+                .IterateSpanAndUnsafe(item =>
                 {
                     var pushed = _buffer.Post(item);
 
@@ -783,7 +783,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher.WithSerilog
             await _stats.CollectDurationAsync(async timestamp =>
              {
                  await batchManager.BatchInfo!.Collection.Span
-                  .InterateSpanAndUnsafeAsync(async itemManager =>
+                  .IterateSpanAndUnsafeAsync(async itemManager =>
                   {
                       try
                       {
@@ -831,7 +831,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher.WithSerilog
             await _stats.CollectDurationAsync(async timestamp =>
              {
                  await batchManager.BatchInfo!.Collection.Span
-                 .InterateSpanAndUnsafeAsync(async itemManager =>
+                 .IterateSpanAndUnsafeAsync(async itemManager =>
                  {
                      try
                      {
@@ -1102,7 +1102,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher.WithSerilog
             _stats.CollectDuration((timestamp) =>
             {
                 batchManager.BatchInfo!.Collection.Span
-                .InterateSpanAndUnsafe(itemManager =>
+                .IterateSpanAndUnsafe(itemManager =>
                 {
                     try
                     {
@@ -1145,7 +1145,7 @@ namespace BatchLooper.Infrastructure.Services.Batcher.WithSerilog
             _stats.CollectDuration((timestamp) =>
             {
                 batchManager.BatchInfo!.Collection.Span
-                .InterateSpanAndUnsafe(itemManager =>
+                .IterateSpanAndUnsafe(itemManager =>
                 {
                     try
                     {

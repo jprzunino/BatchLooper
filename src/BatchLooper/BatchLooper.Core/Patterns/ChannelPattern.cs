@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
-using static BatchLooper.Core.Helpers.InterateHelper;
+using static BatchLooper.Core.Helpers.IterateHelper;
 using static BatchLooper.Core.Helpers.SyncTaskHelper;
 
 namespace BatchLooper.Core.Patterns
@@ -138,7 +138,7 @@ namespace BatchLooper.Core.Patterns
             try
             {
                 collection
-                    .InterateSpanAndUnsafe(
+                    .IterateSpanAndUnsafe(
                         async item => await _recursive.ProducerAsync(item, cancellation),
                         () => cancellation.IsCancellationRequested);
 
@@ -290,7 +290,7 @@ namespace BatchLooper.Core.Patterns
             try
             {
                 collection
-                    .InterateSpanAndUnsafe(item => _recursive.Producer(item));
+                    .IterateSpanAndUnsafe(item => _recursive.Producer(item));
             }
             catch (Exception ex)
             {

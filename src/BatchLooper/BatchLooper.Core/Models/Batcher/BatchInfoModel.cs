@@ -1,4 +1,7 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using BatchLooper.Core.Helpers;
+using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
+using static BatchLooper.Core.Extensions.EnumerableExtensions;
 
 namespace BatchLooper.Core.Models.Batcher
 {
@@ -34,7 +37,7 @@ namespace BatchLooper.Core.Models.Batcher
         }
 
         public BatchInfoModel([NotNull] IEnumerable<TEntity> batch, int index, int batchesCount)
-            : this()
+           : this()
         {
             ArgumentNullException.ThrowIfNull(batch);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(index);
@@ -42,9 +45,16 @@ namespace BatchLooper.Core.Models.Batcher
             Index = index;
             BatchesCount = batchesCount;
 
-            Collection = new([.. batch.Select((s, idx) => new BatchItemInfoModel<TEntity>(s, Interlocked.Add(ref idx, 1)))]);
+            var array = batch as TEntity[] ?? batch.ToPooledArray();
+            var buffer = new BatchItemInfoModel<TEntity>[array.Length];
+            int i = 0;
+
+            array.IterateSpanAndUnsafe(item => buffer[i] = new BatchItemInfoModel<TEntity>(array[i], ++i));
+
+            Collection = buffer;
             ItemsCount = Collection.Length;
         }
+
 
         public BatchInfoModel([NotNull] IEnumerable<TEntity> batch, int index, int batchesCount, int linePosition)
             : this(batch, index, batchesCount)
