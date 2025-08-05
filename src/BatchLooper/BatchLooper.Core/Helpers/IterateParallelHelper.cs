@@ -1,13 +1,13 @@
 ﻿using BatchLooper.Core.Extensions;
-using System;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using static BatchLooper.Core.Extensions.EnumerableExtensions;
 using static BatchLooper.Core.Extensions.ParallelExtension;
 using static BatchLooper.Core.Helpers.MemoryLeakHelper;
 
 namespace BatchLooper.Core.Helpers
 {
-    public static class InterateParallelHelper
+    public static class IterateParallelHelper
     {
         #region IAsyncEnumerable
 
@@ -1411,7 +1411,7 @@ namespace BatchLooper.Core.Helpers
                         }))
                     .SelectMany(s => s);
 
-                Parallel.Invoke(parallelOptions: parallelOptions, actions: [.. actions]);
+                Parallel.Invoke(parallelOptions: parallelOptions, actions: actions.ToPooledArray());
             }
             catch (Exception ex)
             {
@@ -1456,7 +1456,7 @@ namespace BatchLooper.Core.Helpers
                         }))
                     .SelectMany(s => s);
 
-                Parallel.Invoke(parallelOptions: parallelOptions, actions: [.. actions]);
+                Parallel.Invoke(parallelOptions: parallelOptions, actions: actions.ToPooledArray());
             }
             catch (Exception ex)
             {
@@ -1567,7 +1567,7 @@ namespace BatchLooper.Core.Helpers
                         }))
                     .SelectMany(s => s);
 
-                Parallel.Invoke(parallelOptions: parallelOptions, actions: [.. actions]);
+                Parallel.Invoke(parallelOptions: parallelOptions, actions: actions.ToPooledArray());
             }
             catch (Exception ex)
             {
@@ -1608,7 +1608,7 @@ namespace BatchLooper.Core.Helpers
                         }))
                     .SelectMany(s => s);
 
-                Parallel.Invoke(parallelOptions: parallelOptions, actions: [.. actions]);
+                Parallel.Invoke(parallelOptions: parallelOptions, actions: actions.ToPooledArray());
             }
             catch (Exception ex)
             {

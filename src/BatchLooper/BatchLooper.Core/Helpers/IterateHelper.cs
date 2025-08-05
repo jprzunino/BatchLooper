@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using BatchLooper.Core.Extensions;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -7,7 +8,7 @@ namespace BatchLooper.Core.Helpers
     /// <summary>
     /// Attention: Span and Unsafe do not work when source mutate, because their anchor in reference to allocate memory.
     /// </summary>
-    public static class InterateHelper
+    public static class IterateHelper
     {
         //https://www.youtube.com/watch?v=cwBrWn4m9y8
         //https://www.youtube.com/watch?v=jUZ3VKFyB-Ahttps://www.youtube.com/watch?v=jUZ3VKFyB-A
@@ -18,7 +19,7 @@ namespace BatchLooper.Core.Helpers
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(handle);
 
-            ref var searchSpace = ref MemoryMarshal.GetArrayDataReference<TValue>([.. source]);
+            ref var searchSpace = ref MemoryMarshal.GetArrayDataReference(source.ToPooledArray());
             for (int i = 0; i < source.Count(); i++)
             {
                 if (skipAction is not null && skipAction())
@@ -29,12 +30,12 @@ namespace BatchLooper.Core.Helpers
             }
         }
 
-        public static void InterateUnsafeWithForByMemoryMarshalReference<TValue>([NotNull] this IEnumerable<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
+        public static void IterateUnsafeWithForByMemoryMarshalReference<TValue>([NotNull] this IEnumerable<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(handle);
 
-            ref var searchSpace = ref MemoryMarshal.GetReference<TValue>([.. source]);
+            ref var searchSpace = ref MemoryMarshal.GetReference<TValue>(source.ToPooledArray());
             for (int i = 0; i < source.Count(); i++)
             {
                 if (skipAction is not null && skipAction())
@@ -45,12 +46,12 @@ namespace BatchLooper.Core.Helpers
             }
         }
 
-        public static void InterateUnsafeWithWhileByArrayDataReference<TValue>([NotNull] this IEnumerable<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
+        public static void IterateUnsafeWithWhileByArrayDataReference<TValue>([NotNull] this IEnumerable<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(handle);
 
-            ref var start = ref MemoryMarshal.GetArrayDataReference([.. source]);
+            ref var start = ref MemoryMarshal.GetArrayDataReference(source.ToPooledArray());
             ref var end = ref Unsafe.Add(ref start, source.Count());
 
             while (Unsafe.IsAddressLessThan(ref start, ref end))
@@ -63,16 +64,17 @@ namespace BatchLooper.Core.Helpers
             }
         }
 
-        public static void InterateSpan<TValue>([NotNull] this IEnumerable<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
+        public static void IterateSpan<TValue>([NotNull] this IEnumerable<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(handle);
 
-            List<TValue> casted = [.. source];
-            casted.InterateSpan(handle, skipAction);
+            source
+                .ToPooledArray()
+                .IterateSpan(handle, skipAction);
         }
 
-        public static void InterateSpan<TValue>([NotNull] this TValue[] source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
+        public static void IterateSpan<TValue>([NotNull] this TValue[] source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(handle);
@@ -87,7 +89,7 @@ namespace BatchLooper.Core.Helpers
             }
         }
 
-        public static void InterateSpan<TValue>([NotNull] this List<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
+        public static void IterateSpan<TValue>([NotNull] this List<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(handle);
@@ -102,7 +104,7 @@ namespace BatchLooper.Core.Helpers
             }
         }
 
-        public static void InterateSpan<TValue>([NotNull] this Span<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
+        public static void IterateSpan<TValue>([NotNull] this Span<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(handle);
 
@@ -115,7 +117,7 @@ namespace BatchLooper.Core.Helpers
             }
         }
 
-        public static void InterateSpan<TValue>([NotNull] this ReadOnlySpan<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
+        public static void IterateSpan<TValue>([NotNull] this ReadOnlySpan<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(handle);
 
@@ -128,88 +130,99 @@ namespace BatchLooper.Core.Helpers
             }
         }
 
-        public static void InterateSpanAndUnsafe<TValue>([NotNull] this IEnumerable<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
+        public static void IterateSpanAndUnsafe<TValue>([NotNull] this IEnumerable<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(handle);
 
-            Span<TValue> lstAsSpan = CollectionsMarshal.AsSpan([.. source]);
-            ref var serachSpace = ref MemoryMarshal.GetReference(lstAsSpan);
+
+            Span<TValue> lstAsSpan = source switch
+            {
+                TValue[] array => array,
+                List<TValue> list => CollectionsMarshal.AsSpan(list),
+                _ => source.ToPooledArray()
+            };
+            ref var searchSpace = ref MemoryMarshal.GetReference(lstAsSpan);
 
             for (var i = 0; i < lstAsSpan.Length; i++)
             {
                 if (skipAction is not null && skipAction())
                     break;
 
-                var item = Unsafe.Add(ref serachSpace, i);
+                var item = Unsafe.Add(ref searchSpace, i);
                 handle(item);
             }
         }
 
-        public static void InterateSpanAndUnsafe<TValue>([NotNull] this Span<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
+        public static void IterateSpanAndUnsafe<TValue>([NotNull] this Span<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(handle);
 
-            ref var serachSpace = ref MemoryMarshal.GetReference(source);
+            ref var searchSpace = ref MemoryMarshal.GetReference(source);
 
             for (var i = 0; i < source.Length; i++)
             {
                 if (skipAction is not null && skipAction())
                     break;
 
-                var item = Unsafe.Add(ref serachSpace, i);
+                var item = Unsafe.Add(ref searchSpace, i);
                 handle(item);
             }
         }
 
-        public static void InterateSpanAndUnsafe<TValue>([NotNull] this ReadOnlySpan<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
+        public static void IterateSpanAndUnsafe<TValue>([NotNull] this ReadOnlySpan<TValue> source, [NotNull] Action<TValue> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(handle);
 
-            ref var serachSpace = ref MemoryMarshal.GetReference(source);
+            ref var searchSpace = ref MemoryMarshal.GetReference(source);
 
             for (var i = 0; i < source.Length; i++)
             {
                 if (skipAction is not null && skipAction())
                     break;
 
-                var item = Unsafe.Add(ref serachSpace, i);
+                var item = Unsafe.Add(ref searchSpace, i);
                 handle(item);
             }
         }
 
-        public static Task InterateSpanAndUnsafeAsync<TValue>([NotNull] this IEnumerable<TValue> source, [NotNull] Func<TValue, Task> handle, Func<bool>? skipAction = null)
+        public static Task IterateSpanAndUnsafeAsync<TValue>([NotNull] this IEnumerable<TValue> source, [NotNull] Func<TValue, Task> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(handle);
 
-            Span<TValue> lstAsSpan = CollectionsMarshal.AsSpan([.. source]);
-            ref var serachSpace = ref MemoryMarshal.GetReference(lstAsSpan);
+            Span<TValue> lstAsSpan = source switch
+            {
+                TValue[] array => array,
+                List<TValue> list => CollectionsMarshal.AsSpan(list),
+                _ => source.ToPooledArray()
+            };
+            ref var searchSpace = ref MemoryMarshal.GetReference(lstAsSpan);
 
             for (var i = 0; i < lstAsSpan.Length; i++)
             {
                 if (skipAction is not null && skipAction())
                     break;
 
-                var item = Unsafe.Add(ref serachSpace, i);
+                var item = Unsafe.Add(ref searchSpace, i);
                 handle(item).Sync();
             }
 
             return Task.CompletedTask;
         }
 
-        public static Task InterateSpanAndUnsafeAsync<TValue>([NotNull] this Span<TValue> source, [NotNull] Func<TValue, Task> handle, Func<bool>? skipAction = null)
+        public static Task IterateSpanAndUnsafeAsync<TValue>([NotNull] this Span<TValue> source, [NotNull] Func<TValue, Task> handle, Func<bool>? skipAction = null)
         {
             ArgumentNullException.ThrowIfNull(handle);
 
-            ref var serachSpace = ref MemoryMarshal.GetReference(source);
+            ref var searchSpace = ref MemoryMarshal.GetReference(source);
 
             for (var i = 0; i < source.Length; i++)
             {
                 if (skipAction is not null && skipAction())
                     break;
 
-                var item = Unsafe.Add(ref serachSpace, i);
+                var item = Unsafe.Add(ref searchSpace, i);
                 handle(item)/*.Sync(ConfigureAwaitOptions.None)*/;
             }
 
